@@ -77,10 +77,13 @@ function encodeCompositions(compositions: Compositions): string {
     bytes.push(byte);
   }
 
-  // Convert bytes to base64
+  // Convert bytes to URL-safe base64
   if (typeof window !== "undefined") {
     const binaryString = String.fromCharCode(...bytes);
-    return btoa(binaryString);
+    return btoa(binaryString)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
   }
   return "";
 }
@@ -91,8 +94,18 @@ function decodeCompositions(hash: string): Compositions {
   if (!hash) return compositions;
 
   try {
+    // Convert URL-safe base64 back to standard base64
+    let base64 = hash
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    
+    // Add back padding if needed
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    
     // Decode base64 to binary
-    const binaryString = typeof window !== "undefined" ? atob(hash) : "";
+    const binaryString = typeof window !== "undefined" ? atob(base64) : "";
     const bytes: number[] = [];
     for (let i = 0; i < binaryString.length; i++) {
       bytes.push(binaryString.charCodeAt(i));
